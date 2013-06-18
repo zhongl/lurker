@@ -17,11 +17,24 @@ import static org.junit.Assert.fail;
  */
 public class LurkerTest {
 
+    @Test
+    public void should_parse_arguments() throws Exception {
+        Lurker.parse("Bootstrap,localhost:12306,http://");
+        fail();
+    }
+
+    @Test
+    public void should_load_class_from_local() throws Exception {
+        final String name = "me.zhongl.Bootstrap";
+        final Class<?> aClass = Lurker.loadClass(name, "file:./src/test/resources/classpath");
+        assertThat(aClass.getName(), is(name));
+    }
+
 
     @Test
     public void should_get_classpath_urls() throws Exception {
         final String redirect = "/real/classpath";
-        final String content = "http://localhost:12306/a.jar";
+        final String content = "http://localhost:12306/test.jar";
 
         final HttpServer server = httpserver(12306);
         server.get(by(uri("/classpath"))).redirectTo(redirect);
@@ -38,8 +51,24 @@ public class LurkerTest {
     }
 
     @Test
+    public void should_load_class() throws Exception {
+        final String content = "http://localhost:12306/jar/test.jar";
+
+        final HttpServer server = httpserver(12306);
+        server.get(by(uri("/classpath"))).response(content);
+        server.get(by(uri("/jar/test.jar"))).response(header("Content-Type", "application/java-archive"), content(pathResource("test.jar")));
+
+        running(server, new Runnable() {
+            @Override
+            public void run() throws Exception {
+                Lurker.loadClass("me.zhongl.Bootstrap", "http://localhost:12306/classpath");
+            }
+        });
+    }
+
+    @Test
     public void should_complain_invalid_url() throws Exception {
-        final String content = "ttp://localhost:12306/a.jar";
+        final String content = "ttp://localhost:12306/test.jar";
 
         final HttpServer server = httpserver(12306);
         server.get(by(uri("/classpath"))).response(content);
@@ -50,7 +79,7 @@ public class LurkerTest {
 
                 try {
                     Lurker.urls("http://localhost:12306/classpath");
-                    fail("Should complain invalid url");
+                    fail();
                 } catch (IllegalStateException ignored) { }
             }
         });
@@ -58,7 +87,6 @@ public class LurkerTest {
 
     @Test
     public void should_complain_bad_request() throws Exception {
-        final String classpath = "http://localhost:12306/classpath";
 
         final HttpServer server = httpserver(12306);
 
@@ -66,8 +94,8 @@ public class LurkerTest {
             @Override
             public void run() throws Exception {
                 try {
-                    Lurker.loadClass("", classpath);
-                    fail("Should complain bad request");
+                    Lurker.loadClass("", "http://localhost:12306/classpath");
+                    fail();
                 } catch (IllegalStateException ignored) { }
             }
         });

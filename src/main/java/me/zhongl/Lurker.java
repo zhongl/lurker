@@ -25,14 +25,19 @@ public final class Lurker {
     }
 
     static void bootstrap(String args, Instrumentation inst) throws Exception {
-        String name = "";
-        String url = "";
-        String classpath = "";
+        String[] arguments = parse(args);
+        String name = arguments[0];
+        String url = arguments[1];
+        String classpath = arguments[2];
 
         loadClass(name, classpath).getConstructor(String.class, Instrumentation.class).newInstance(url, inst);
     }
 
-    static Class<?> loadClass(String name, String classpath) throws ClassNotFoundException {
+    static String[] parse(String args) {
+        return new String[0];  // TODO
+    }
+
+    static Class<?> loadClass(String name, String classpath) {
         try {
             return URLClassLoader.newInstance(urls(classpath)).loadClass(name);
         } catch (Exception e) {
