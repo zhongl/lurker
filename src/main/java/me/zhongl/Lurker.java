@@ -9,6 +9,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:zhong.lunfu@gmail.com">zhongl<a>
@@ -24,24 +26,22 @@ public final class Lurker {
         bootstrap(args, inst);
     }
 
-    static void bootstrap(String args, Instrumentation inst) throws Exception {
-        String[] arguments = parse(args);
-        String name = arguments[0];
-        String url = arguments[1];
-        String classpath = arguments[2];
+    static void bootstrap(String classpathUrl, Instrumentation inst) throws Exception {
+        final URL url = new URL(classpathUrl);
 
-        final Class<?> aClass = loadClass(name, classpath);
+        final Map<String, String> queryMap = map(url.getQuery());
+
+        String name = queryMap.get("bootstrap");
+        String address = queryMap.containsKey("address") ? queryMap.get("address") : url.getHost() + ':' + url.getPort();
+
+        final Class<?> aClass = loadClass(name, classpathUrl);
 
         try {
-            final Object o = aClass.getConstructor(String.class, Instrumentation.class).newInstance(url, inst);
+            final Object o = aClass.getConstructor(String.class, Instrumentation.class).newInstance(address, inst);
             aClass.getMethod("apply").invoke(o);
         } catch (Exception e) {
-            throw new IllegalStateException("Invalid bootstrap class from " + classpath, e);
+            throw new IllegalStateException("Invalid bootstrap class from " + classpathUrl, e);
         }
-    }
-
-    static String[] parse(String args) {
-        return new String[0];  // TODO
     }
 
     static Class<?> loadClass(String name, String classpath) {
@@ -64,6 +64,15 @@ public final class Lurker {
         } finally {
             input.close();
         }
+    }
+
+    private static Map<String, String> map(String query) {
+        Map<String, String> map = new HashMap<String, String>();
+        for (String p : query.split("&")) {
+            final String[] pair = p.split("=", 2);
+            map.put(pair[0], pair[1]);
+        }
+        return map;
     }
 
     private static URL[] urls(InputStream input, String classpath) throws IOException {
