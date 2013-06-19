@@ -3,46 +3,40 @@ package me.zhongl;
 import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.instrument.Instrumentation;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.security.CodeSource;
+import java.util.*;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 
 /**
  * @author <a href="mailto:zhong.lunfu@gmail.com">zhongl<a>
  */
 public final class Lurker {
+
     private Lurker() {}
 
     public static void main(String[] args) throws Exception {
-        selectAndAttachVM();
-    }
-
-    private static VirtualMachine selectAndAttachVM() throws Exception {
-        System.out.println("Running attachable java virtual machines are:");
-
-        final List<VirtualMachineDescriptor> vms = VirtualMachine.list();
-        for (int i = 0; i < vms.size(); i++) {
-            final VirtualMachineDescriptor vmd = vms.get(i);
-            System.out.println(i + ": " + vmd.id() + '\t' + vmd.displayName());
+        switch (args.length) {
+            case 0:
+                selectAndAttachVM();
+                break;
+            case 1:
+                if ("-help".equals(args[0])) {
+                    printUsage();
+                } else {
+                    loadLurkerTo(VirtualMachine.attach(args[0]));
+                }
+                break;
+            default:
+                System.out.println("Invalid arguments: " + Arrays.toString(args));
+                printUsage();
+                System.exit(-1);
         }
-
-        System.out.print("Please select vm by index [0-" + (vms.size() - 1) + "]:");
-
-        final char index = (char) System.in.read();
-        final int i = Integer.parseInt(String.valueOf(index));
-        final VirtualMachineDescriptor vmd = vms.get(i);
-
-        System.out.println("Attaching java virtual machine: " + vmd.id());
-        return VirtualMachine.attach(vmd);
     }
 
     public static void agentmain(String args, Instrumentation inst) throws Exception {
@@ -93,6 +87,42 @@ public final class Lurker {
         }
     }
 
+    private static void selectAndAttachVM() throws Exception {
+        System.out.println("Running attachable java virtual machines are:");
+
+        final List<VirtualMachineDescriptor> vms = VirtualMachine.list();
+        for (int i = 0; i < vms.size(); i++) {
+            final VirtualMachineDescriptor vmd = vms.get(i);
+            System.out.println(i + ": " + vmd.id() + '\t' + vmd.displayName());
+        }
+
+        System.out.print("Please select vm by index [0-" + (vms.size() - 1) + "]:");
+
+        final char index = (char) System.in.read();
+        final int i = Integer.parseInt(String.valueOf(index));
+        final VirtualMachineDescriptor vmd = vms.get(i);
+
+        System.out.println("Attaching java virtual machine: " + vmd.id());
+        loadLurkerTo(VirtualMachine.attach(vmd));
+    }
+
+    private static String getVersion(JarFile jar) throws IOException {
+        return jar.getManifest().getMainAttributes().getValue(Attributes.Name.SIGNATURE_VERSION);
+    }
+
+    private static JarFile thisJarFile() throws Exception {
+        final CodeSource source = Lurker.class.getProtectionDomain().getCodeSource();
+        return new JarFile(new File(source.getLocation().toURI()));
+    }
+
+    private static void printUsage() throws Exception {
+        System.out.println("Version:" + getVersion(thisJarFile()) + "\nUsage: Lurker [-help|pid]");
+    }
+
+    private static void loadLurkerTo(VirtualMachine vm) {
+        // TODO
+    }
+
     private static Map<String, String> map(String query) {
         Map<String, String> map = new HashMap<String, String>();
         for (String p : query.split("&")) {
@@ -124,4 +154,5 @@ public final class Lurker {
             throw new IllegalStateException("Invalid url [" + line + "], cause by " + e);
         }
     }
+
 }
