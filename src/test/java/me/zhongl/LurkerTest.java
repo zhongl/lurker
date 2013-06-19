@@ -56,7 +56,9 @@ public class LurkerTest {
 
         final HttpServer server = httpserver(12306);
         server.get(by(uri("/classpath"))).response(content);
-        server.get(by(uri("/jar/test.jar"))).response(header("Content-Type", "application/java-archive"), content(pathResource("test.jar")));
+        server.get(by(uri("/jar/test.jar")))
+              .response(header("Content-Type", "application/java-archive"),
+                        content(pathResource("test.jar")));
 
         running(server, new Runnable() {
             @Override

@@ -30,7 +30,14 @@ public final class Lurker {
         String url = arguments[1];
         String classpath = arguments[2];
 
-        loadClass(name, classpath).getConstructor(String.class, Instrumentation.class).newInstance(url, inst);
+        final Class<?> aClass = loadClass(name, classpath);
+
+        try {
+            final Object o = aClass.getConstructor(String.class, Instrumentation.class).newInstance(url, inst);
+            aClass.getMethod("apply").invoke(o);
+        } catch (Exception e) {
+            throw new IllegalStateException("Invalid bootstrap class from " + classpath, e);
+        }
     }
 
     static String[] parse(String args) {
@@ -40,8 +47,10 @@ public final class Lurker {
     static Class<?> loadClass(String name, String classpath) {
         try {
             return URLClassLoader.newInstance(urls(classpath)).loadClass(name);
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception e) {
-            throw illegalStateWhenGet(classpath, e);
+            throw new IllegalStateException("Failed to load bootstrap class from " + classpath, e);
         }
     }
 
@@ -51,14 +60,10 @@ public final class Lurker {
         try {
             return urls(input, classpath);
         } catch (IOException e) {
-            throw illegalStateWhenGet(classpath, e);
+            throw new IllegalStateException("Failed to get classpath from " + classpath, e);
         } finally {
             input.close();
         }
-    }
-
-    private static IllegalStateException illegalStateWhenGet(String url, Exception e) {
-        return new IllegalStateException("Failed to get classpath from " + url + ", cause by " + e);
     }
 
     private static URL[] urls(InputStream input, String classpath) throws IOException {
