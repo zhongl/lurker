@@ -1,5 +1,8 @@
 package me.zhongl;
 
+import com.sun.tools.attach.VirtualMachine;
+import com.sun.tools.attach.VirtualMachineDescriptor;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +13,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,6 +21,29 @@ import java.util.Map;
  */
 public final class Lurker {
     private Lurker() {}
+
+    public static void main(String[] args) throws Exception {
+        selectAndAttachVM();
+    }
+
+    private static VirtualMachine selectAndAttachVM() throws Exception {
+        System.out.println("Running attachable java virtual machines are:");
+
+        final List<VirtualMachineDescriptor> vms = VirtualMachine.list();
+        for (int i = 0; i < vms.size(); i++) {
+            final VirtualMachineDescriptor vmd = vms.get(i);
+            System.out.println(i + ": " + vmd.id() + '\t' + vmd.displayName());
+        }
+
+        System.out.print("Please select vm by index [0-" + (vms.size() - 1) + "]:");
+
+        final char index = (char) System.in.read();
+        final int i = Integer.parseInt(String.valueOf(index));
+        final VirtualMachineDescriptor vmd = vms.get(i);
+
+        System.out.println("Attaching java virtual machine: " + vmd.id());
+        return VirtualMachine.attach(vmd);
+    }
 
     public static void agentmain(String args, Instrumentation inst) throws Exception {
         bootstrap(args, inst);
