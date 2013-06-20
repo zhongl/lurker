@@ -8,12 +8,6 @@
     <artifactId>lurker</artifactId>
     <version>0.1</version>
 
-    <!--
-        <properties>
-            <toolsjar>${java.home}/../lib/tools.jar</toolsjar>
-        </properties>
-    -->
-
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
