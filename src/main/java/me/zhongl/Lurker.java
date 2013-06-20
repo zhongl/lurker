@@ -1,16 +1,14 @@
 package me.zhongl;
 
-import com.sun.tools.attach.VirtualMachine;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.instrument.Instrumentation;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.security.CodeSource;
 import java.util.*;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
 
 /**
  * @author <a href="mailto:zhong.lunfu@gmail.com">zhongl<a>
@@ -18,18 +16,6 @@ import java.util.jar.JarFile;
 public final class Lurker {
 
     private Lurker() {}
-
-    public static void main(String[] args) throws Exception {
-        switch (args.length) {
-            case 2:
-                loadLurkerTo(VirtualMachine.attach(args[0]), args[1]);
-                break;
-            default:
-                System.out.println("Invalid arguments: " + Arrays.toString(args));
-                printUsage();
-                System.exit(-1);
-        }
-    }
 
     public static void agentmain(String args, Instrumentation inst) throws Exception {
         bootstrap(args, inst);
@@ -119,30 +105,6 @@ public final class Lurker {
         } finally {
             input.close();
         }
-    }
-
-    private static String getVersion(JarFile jar) throws IOException {
-        return jar.getManifest().getMainAttributes().getValue(Attributes.Name.SIGNATURE_VERSION);
-    }
-
-    private static JarFile thisJarFile() throws Exception {
-        return new JarFile(new File(agentJarUrl().toURI()));
-    }
-
-    private static URL agentJarUrl() {
-        final CodeSource source = Lurker.class.getProtectionDomain().getCodeSource();
-        return source.getLocation();
-    }
-
-    private static void printUsage() throws Exception {
-        System.out.println("Version:" + getVersion(thisJarFile()) +
-                           "\nUsage: lurker <jvm pid> <url>" +
-                           "\nMore information please see http://github.com/zhongl/lurker");
-    }
-
-    private static void loadLurkerTo(VirtualMachine vm, String url) throws Exception {
-        vm.loadAgent(agentJarUrl().getFile(), url);
-        vm.detach();
     }
 
     private static Map<String, String> map(String query) {

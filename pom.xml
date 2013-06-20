@@ -54,7 +54,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>me.zhongl.Lurker</mainClass>
+                            <mainClass>me.zhongl.Main</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Agent-Class>me.zhongl.Lurker</Agent-Class>

@@ -1,4 +1,4 @@
-Lurker is a tiny common [javaagent][0], it is incubate from [HouseMD][1].
+Lurker is a tiny common [java agent][0], it is incubate from [HouseMD][1].
 
 
 [0]:https://www.google.com/search?q=java+agent
