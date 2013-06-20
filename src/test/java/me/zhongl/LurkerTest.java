@@ -21,23 +21,21 @@ public class LurkerTest {
 
     @Test
     public void should_bootstrap() throws Exception {
-        final String content = "http://localhost:12306/jar/test.jar";
         final HttpServer server = httpserver(12306);
-        server.get(by(uri("/classpath"))).response(content);
-
+        server.get(by(uri("/classpath"))).response("http://localhost:12306/jar/test.jar");
         server.get(by(uri("/jar/test.jar")))
               .response(header("Content-Type", "application/java-archive"),
-                        content(pathResource("test.jar")));
+                        content(file("target/stub-tests.jar")));
 
         running(server, new Runnable() {
             @Override
             public void run() throws Exception {
                 final Instrumentation inst = mock(Instrumentation.class);
-                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.Bootstrap&k=v", inst);
-                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.SimpleAgent", inst);
-                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.ConfigurableAgent&k=v", inst);
-                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.InstrumentationAgent", inst);
-                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.SuperAgent&k=v", inst);
+                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.stub.Bootstrap&k=v", inst);
+                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.stub.SimpleAgent", inst);
+                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.stub.ConfigurableAgent&k=v", inst);
+                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.stub.InstrumentationAgent", inst);
+                Lurker.bootstrap("http://localhost:12306/classpath?bootstrap=me.zhongl.stub.SuperAgent&k=v", inst);
             }
         });
     }
@@ -45,7 +43,7 @@ public class LurkerTest {
 
     @Test
     public void should_load_class_from_local() throws Exception {
-        final String name = "me.zhongl.Bootstrap";
+        final String name = "me.zhongl.stub.Bootstrap";
         final Class<?> aClass = Lurker.loadClass(name, "file:./src/test/resources/classpath");
         assertThat(aClass.getName(), is(name));
     }

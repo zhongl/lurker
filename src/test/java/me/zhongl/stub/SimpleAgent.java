@@ -1,4 +1,4 @@
-package me.zhongl;
+package me.zhongl.stub;
 
 /**
  * @author <a href="mailto:zhong.lunfu@gmail.com">zhongl<a>

@@ -126,7 +126,10 @@ public final class Lurker {
             urls.add(url(line));
         }
 
-        if (urls.isEmpty()) throw new IllegalStateException("Get none urls from " + classpath);
+        if (urls.isEmpty()) {
+            System.err.println("WARN: Get none urls from " + classpath);
+            return new URL[0];
+        }
 
         return urls.toArray(new URL[urls.size()]);
     }

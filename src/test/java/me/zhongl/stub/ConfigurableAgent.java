@@ -1,4 +1,4 @@
-package me.zhongl;
+package me.zhongl.stub;
 
 import java.util.Map;
 

@@ -5,7 +5,6 @@ import com.sun.tools.attach.VirtualMachine;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -39,8 +38,7 @@ public final class Main {
     }
 
     private static URL agentJarUrl() {
-        final CodeSource source = Main.class.getProtectionDomain().getCodeSource();
-        return source.getLocation();
+        return Main.class.getProtectionDomain().getCodeSource().getLocation();
     }
 
     private static void printUsage() throws Exception {
