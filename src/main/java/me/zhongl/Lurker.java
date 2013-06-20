@@ -1,7 +1,6 @@
 package me.zhongl;
 
 import com.sun.tools.attach.VirtualMachine;
-import com.sun.tools.attach.VirtualMachineDescriptor;
 
 import java.io.*;
 import java.lang.instrument.Instrumentation;
@@ -22,15 +21,8 @@ public final class Lurker {
 
     public static void main(String[] args) throws Exception {
         switch (args.length) {
-            case 0:
-                selectAndAttachVM();
-                break;
-            case 1:
-                if ("-help".equals(args[0])) {
-                    printUsage();
-                } else {
-                    loadLurkerTo(VirtualMachine.attach(args[0]));
-                }
+            case 2:
+                loadLurkerTo(VirtualMachine.attach(args[0]), args[1]);
                 break;
             default:
                 System.out.println("Invalid arguments: " + Arrays.toString(args));
@@ -47,21 +39,62 @@ public final class Lurker {
         bootstrap(args, inst);
     }
 
-    static void bootstrap(String classpathUrl, Instrumentation inst) throws Exception {
+    static void bootstrap(String classpathUrl, final Instrumentation inst) throws Exception {
         final URL url = new URL(classpathUrl);
-
         final Map<String, String> queryMap = map(url.getQuery());
 
-        String name = queryMap.get("bootstrap");
-        String address = queryMap.containsKey("address") ? queryMap.get("address") : url.getHost() + ':' + url.getPort();
+        String name = queryMap.remove("bootstrap");
+        if (name == null) throw new IllegalStateException("Missing bootstrap class name.");
 
         final Class<?> aClass = loadClass(name, classpathUrl);
 
+        Object o = newInstanceBy(creators(aClass, inst, queryMap));
+
         try {
-            final Object o = aClass.getConstructor(String.class, Instrumentation.class).newInstance(address, inst);
             aClass.getMethod("apply").invoke(o);
         } catch (Exception e) {
             throw new IllegalStateException("Invalid bootstrap class from " + classpathUrl, e);
+        }
+
+    }
+
+    private static Iterator<Creator> creators(final Class<?> aClass, final Instrumentation inst, final Map<String, String> conf) {
+        return Arrays.asList(
+                new Creator() {
+                    @Override
+                    public Object newInstance() throws Exception {
+                        return aClass.getConstructor(Map.class, Instrumentation.class).newInstance(conf, inst);
+                    }
+                },
+                new Creator() {
+
+                    @Override
+                    public Object newInstance() throws Exception {
+                        return aClass.getConstructor(Instrumentation.class).newInstance(inst);
+                    }
+                },
+                new Creator() {
+                    @Override
+                    public Object newInstance() throws Exception {
+                        return aClass.getConstructor(Map.class).newInstance(conf);
+                    }
+                },
+                new Creator() {
+                    @Override
+                    public Object newInstance() throws Exception {
+                        return aClass.newInstance();
+                    }
+                }
+        ).iterator();
+    }
+
+    private static Object newInstanceBy(Iterator<Creator> creators) {
+        while (true) {
+            try {
+                return creators.next().newInstance();
+            } catch (Exception e) {
+                if (!creators.hasNext()) throw new IllegalStateException("Invalid bootstrap class constructor.", e);
+            }
         }
     }
 
@@ -75,6 +108,7 @@ public final class Lurker {
         }
     }
 
+
     static URL[] urls(String classpath) throws IOException {
         final InputStream input = url(classpath).openStream();
 
@@ -87,40 +121,28 @@ public final class Lurker {
         }
     }
 
-    private static void selectAndAttachVM() throws Exception {
-        System.out.println("Running attachable java virtual machines are:");
-
-        final List<VirtualMachineDescriptor> vms = VirtualMachine.list();
-        for (int i = 0; i < vms.size(); i++) {
-            final VirtualMachineDescriptor vmd = vms.get(i);
-            System.out.println(i + ": " + vmd.id() + '\t' + vmd.displayName());
-        }
-
-        System.out.print("Please select vm by index [0-" + (vms.size() - 1) + "]:");
-
-        final char index = (char) System.in.read();
-        final int i = Integer.parseInt(String.valueOf(index));
-        final VirtualMachineDescriptor vmd = vms.get(i);
-
-        System.out.println("Attaching java virtual machine: " + vmd.id());
-        loadLurkerTo(VirtualMachine.attach(vmd));
-    }
-
     private static String getVersion(JarFile jar) throws IOException {
         return jar.getManifest().getMainAttributes().getValue(Attributes.Name.SIGNATURE_VERSION);
     }
 
     private static JarFile thisJarFile() throws Exception {
+        return new JarFile(new File(agentJarUrl().toURI()));
+    }
+
+    private static URL agentJarUrl() {
         final CodeSource source = Lurker.class.getProtectionDomain().getCodeSource();
-        return new JarFile(new File(source.getLocation().toURI()));
+        return source.getLocation();
     }
 
     private static void printUsage() throws Exception {
-        System.out.println("Version:" + getVersion(thisJarFile()) + "\nUsage: Lurker [-help|pid]");
+        System.out.println("Version:" + getVersion(thisJarFile()) +
+                           "\nUsage: lurker <jvm pid> <url>" +
+                           "\nMore information please see http://github.com/zhongl/lurker");
     }
 
-    private static void loadLurkerTo(VirtualMachine vm) {
-        // TODO
+    private static void loadLurkerTo(VirtualMachine vm, String url) throws Exception {
+        vm.loadAgent(agentJarUrl().getFile(), url);
+        vm.detach();
     }
 
     private static Map<String, String> map(String query) {
@@ -153,6 +175,10 @@ public final class Lurker {
         } catch (MalformedURLException e) {
             throw new IllegalStateException("Invalid url [" + line + "], cause by " + e);
         }
+    }
+
+    private interface Creator {
+        Object newInstance() throws Exception;
     }
 
 }

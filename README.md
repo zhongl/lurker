@@ -50,14 +50,14 @@ package real;
 
 public class SimpleAgent {
 
-    public SimpleAgent()
+    public SimpleAgent() { ... }
 
     public void apply() { ... }
 
 }
 
 public class ConfigurableAgent {
-    public ConfigurableAgent(Map<String, String> conf)
+    public ConfigurableAgent(Map<String, String> conf) { ... }
 
     public void apply() { ... }
 
@@ -65,14 +65,14 @@ public class ConfigurableAgent {
 
 
 public class InstrumentationAgent {
-    public InstrumentationAgent(Instrumentation inst)
+    public InstrumentationAgent(Instrumentation inst) { ... }
 
     public void apply() { ... }
 
 }
 
 public class SuperAgent {
-    public SuperAgent(Map<String, String> conf, Instrumentation inst)
+    public SuperAgent(Map<String, String> conf, Instrumentation inst) { ... }
 
     public void apply() { ... }
 
