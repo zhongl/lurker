@@ -18,6 +18,7 @@ public final class Lurker {
     private Lurker() {}
 
     public static void agentmain(String args, Instrumentation inst) throws Exception {
+        // TODO log args and exception to ~/.lurker/agentmain.<pid>.log
         bootstrap(args, inst);
     }
 
